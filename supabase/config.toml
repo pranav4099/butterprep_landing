@@ -1,0 +1,16 @@
+project_id = "fmswyywzlmpcsumivbbr"
+
+[functions.ai-suggest-pattern]
+verify_jwt = false
+
+[functions.ai-distribute-syllabus]
+verify_jwt = false
+
+[functions.ai-generate-paper]
+verify_jwt = false
+
+[functions.ai-question-action]
+verify_jwt = false
+
+[functions.ai-validate-paper]
+verify_jwt = false
