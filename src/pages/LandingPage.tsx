@@ -114,10 +114,54 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: 
 };
 
 /* ── Book a Demo Modal ── */
+type DemoForm = {
+  name: string;
+  email: string;
+  phone: string;
+  school: string;
+  role: string;
+  message: string;
+};
+
+const submitDemoRequest = async (form: DemoForm) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Demo form is not configured yet.');
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/book_demo_requests`, {
+    method: 'POST',
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      full_name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      school: form.school.trim(),
+      role: form.role.trim() || null,
+      message: form.message.trim() || null,
+      source: 'butterprep_landing',
+      page_url: window.location.href,
+      user_agent: navigator.userAgent,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to submit your request. Please try again.');
+  }
+};
+
 const BookDemoModal: React.FC<{ open: boolean; onClose: () => void; brand: typeof brand }> = ({ open, onClose, brand: b }) => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', school: '', role: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -134,18 +178,25 @@ const BookDemoModal: React.FC<{ open: boolean; onClose: () => void; brand: typeo
     onClose();
     setTimeout(() => {
       setSubmitted(false);
+      setSubmitError('');
       setForm({ name: '', email: '', phone: '', school: '', role: '', message: '' });
     }, 300);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.school.trim()) return;
     setSubmitting(true);
-    setTimeout(() => {
+    setSubmitError('');
+
+    try {
+      await submitDemoRequest(form);
       setSubmitting(false);
       setSubmitted(true);
-    }, 700);
+    } catch (error) {
+      setSubmitting(false);
+      setSubmitError(error instanceof Error ? error.message : 'Unable to submit your request. Please try again.');
+    }
   };
 
   if (!open) return null;
@@ -242,6 +293,11 @@ const BookDemoModal: React.FC<{ open: boolean; onClose: () => void; brand: typeo
                 }}>
                 {submitting ? 'Submitting...' : 'Request Demo'}
               </button>
+              {submitError && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-center text-xs font-medium text-red-700">
+                  {submitError}
+                </p>
+              )}
               <p className="text-center text-xs" style={{ color: '#8A9BB5' }}>
                 Our sales team will reach out within 1 business day.
               </p>
